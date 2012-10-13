@@ -6,6 +6,7 @@ import annotation.tailrec
 import collection.mutable.ArrayBuffer
 
 class Player(val name: String) {
+
   var numOfChips: Int = _
   val cards = ArrayBuffer[Card]()
 
@@ -14,6 +15,11 @@ class Player(val name: String) {
   }
 
   def score: Int = scoreOfCards - numOfChips
+
+  def info = {
+    val cInfo = cards.map(_.num).sorted.mkString(" ")
+    name+": score="+score+" chips="+numOfChips+" cards="+cInfo
+  }
 
   private def scoreOfCards: Int = {
 

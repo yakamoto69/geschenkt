@@ -5,4 +5,4 @@ import yakamoto69.scala._
 
 trait Choice
 case class Pick() extends Choice
-case class Pay() extends Choice
+case class Pass() extends Choice

@@ -9,11 +9,13 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class RoundSpec extends FunSpec with BeforeAndAfter {
 
-  var game: Game = _
-  var round: Round = _
+  var game: Game[Player] = _
+  var round: Round[Player] = _
 
   before {
-    game = new Game(Nil)
+    val p = new Player("test")
+    p.numOfChips = 10 // 0 にならない程度にたくさん
+    game = new Game(Seq(p))
     game.backedCards = ((10 until 20) map toCard).toList  // 適当に、なくならない程度にたくさん
     round = game.round
   }
@@ -43,7 +45,7 @@ class RoundSpec extends FunSpec with BeforeAndAfter {
 
       assert(!round.isEnd)
 
-      round.doTurn(Pay())
+      round.doTurn(Pass())
 
       assert(!round.isEnd)
 
@@ -74,21 +76,6 @@ class RoundSpec extends FunSpec with BeforeAndAfter {
       round.doTurn(Pick())  // ラウンドを終了させる
 
       assert(game.isOver)
-    }
-  }
-
-  describe("A Turn") {
-
-    it("should rotate around all the players") {
-      pending
-    }
-
-    it("When a player ends a round, the player plays the first turn of the next round") {
-      pending
-    }
-
-    it("When a game begins, the start player plays the first turn") {
-      pending
     }
   }
 

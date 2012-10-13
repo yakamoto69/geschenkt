@@ -11,4 +11,26 @@ package object scala {
       num
     }
   }
+
+  def rotate[A](xs: Seq[A], x: A): A = {
+    val i = xs.indexOf(x)
+
+    assert(i != -1)
+
+    val n = i + 1
+    xs(if (n > xs.length - 1) 0 else n)
+  }
+
+  implicit def toOptW[A](o: Option[A]) = new OptionW[A](o)
+
+  class OptionW[A](o: Option[A]) {
+    def some[X](some: A => X) = new Cata[A, X](o, some)
+  }
+
+  class Cata[A, X](o: Option[A], some: A => X) {
+    def none(none: => X): X = o match {
+      case Some(a) => some(a)
+      case None => none
+    }
+  }
 }
