@@ -20,43 +20,12 @@ trait Ai extends Playable {
 }
 
 
-trait ConsoleUi extends Playable {
+trait Human extends Playable {
   self: Player =>
 
-  private val DoPick = """\s*(?i:pick)\s*""".r
-  private val DoPass = """\s*(?i:pass)\s*""".r
-  private val ShowStatus = """\s*(?i:status)\s*""".r
+  def ui: Ui
 
   def choose(game: Game[_]): Choice = {
-
-    def pl = println(_:String)
-
-    def showStatus() {
-      pl(self.info)
-      pl(game.round.info)
-    }
-
-    @tailrec
-    def chooseByConsole(): Choice = {
-      Console.print(">")
-
-      Console.readLine() match {
-        case DoPick() => Pick()
-        case DoPass() => Pass()
-
-        case ShowStatus() => {
-          showStatus()
-          chooseByConsole()
-        }
-
-        case _ => {
-          pl("Wrong Command")
-          chooseByConsole()
-        }
-      }
-    }
-
-    showStatus()
-    chooseByConsole()
+    ui.promptToChoose(self)
   }
 }

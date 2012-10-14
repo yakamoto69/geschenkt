@@ -8,13 +8,17 @@ object Game {
 
   def main(args: Array[String]) {
 
+    val console = new ConsoleUi[Player with Playable]
+
     def initP[P <: Player](p: P): P = {
       p.numOfChips = 11
       p
     }
 
     def ai(i: Int) = initP(new Player("AI"+i) with Ai)
-    def player = initP(new Player("Player") with ConsoleUi)
+    def player: Player with Human = initP(new Player("Player") with Human {
+      val ui = console
+    })
 
     def initCards = {
       val all = util.Random.shuffle((3 to 35).toList)
@@ -22,20 +26,11 @@ object Game {
     }
 
     val players = Seq(player, ai(1), ai(2), ai(3))
-    val game = new Game(Random.shuffle(players))
+    val game = new InteractiveGame(console, Random.shuffle(players))
     game.backedCards = initCards
+    console.game = game
 
-    game.round.start()
-    while (!game.isOver) {
-      val choice = game.turnPlayer.choose(game)
-      println(game.turnPlayer.name+" "+choice)
-      game.round.doTurn(choice)
-    }
-
-    println("winner: "+game.winner.name)
-    players foreach { p =>
-      println(p.info)
-    }
+    game.start()
   }
 }
 
@@ -69,6 +64,8 @@ class Game[P <: Player](val players: Seq[P]) {
       startNextRound()
   }
 
+  def onRoundStart() {}
+
   def startNextRound() {
     round = new Round(round.num + 1, this)
     round.start()
@@ -76,6 +73,31 @@ class Game[P <: Player](val players: Seq[P]) {
 
   def nextPlayer = {
     rotate(players, turnPlayer)
+  }
+}
+
+class InteractiveGame(ui: Ui, players: Seq[Player with Playable]) extends Game[Player with Playable](players) {
+
+  override def onRoundEnd() {
+    ui.onRoundEnd()
+    super.onRoundEnd()
+  }
+
+  override def onRoundStart() {
+    ui.onRoundStart()
+    super.onRoundStart()
+  }
+
+  def start() {
+    round.start()
+
+    while (!isOver) {
+      val choice = turnPlayer.choose(this)
+      ui.onChosen(choice)
+      round.doTurn(choice)
+    }
+
+    ui.onEnd()
   }
 }
 
@@ -138,11 +160,12 @@ class Round[P <: Player](val num: Int, game: Game[P]) {
     game.backedCards = tail
 
     state = Running()
+    game.onRoundStart()
   }
 
   def info = {
     val faced = facedCard.some(_.num.toString).none("none")
-    "round:"+num+" faced:"+faced+" chips:"+game.numOfChipsOnBoard
+    "round "+num+" faced:'"+faced+"' chips:"+game.numOfChipsOnBoard
   }
 }
 

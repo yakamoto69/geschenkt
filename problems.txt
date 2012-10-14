@@ -1,0 +1,9 @@
+・Game がgenericsになっているのがわずらわしい。genericsをやめて使う側でがんばった方がいいのか？
+
+・Player.mkStraits でやっているけど、再帰の結果順序が逆になったものが出来上がってしまうことがよくある。
+    元のデータをreverseするべきなのか？
+
+・ConsoleUi.onStartでOption.get使っているけど、読みにくくなったとしてもsome, none使うべきなのか？
+
+・Gameにイベント通知させるために、Gameが通知する機能持ってるのも嫌なのでGameを継承したInteractiveGameが
+    各メソッドを上書きする形にしたけど、これなら最初からGameが通知した方がましじゃないか？
