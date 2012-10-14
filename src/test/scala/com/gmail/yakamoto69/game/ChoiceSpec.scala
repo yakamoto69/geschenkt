@@ -9,8 +9,8 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class ChoiceSpec extends FunSpec with BeforeAndAfter {
 
-  var game: Game[Player] = _
-  var round: Round[Player] = _
+  var game: Game = _
+  var round: Round = _
   var player: Player = _
 
   before {
@@ -18,7 +18,7 @@ class ChoiceSpec extends FunSpec with BeforeAndAfter {
     player.numOfChips = 5
 
     game = new Game(Seq(player))
-    game.backedCards = Card(10) :: Nil
+    game.backedCards = new FixedBackedCards(Card(10) :: Nil)
     round = game.round
     round.start()
   }

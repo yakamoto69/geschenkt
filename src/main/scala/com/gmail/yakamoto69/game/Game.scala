@@ -8,7 +8,7 @@ object Game {
 
   def main(args: Array[String]) {
 
-    val console = new ConsoleUi[Player with Playable]
+    val console = new ConsoleUi
 
     def initP[P <: Player](p: P): P = {
       p.numOfChips = 11
@@ -27,27 +27,24 @@ object Game {
 
     val players = Seq(player, ai(1), ai(2), ai(3))
     val game = new InteractiveGame(console, Random.shuffle(players))
-    game.backedCards = initCards
+    game.backedCards = new FixedBackedCards(initCards)
     console.game = game
 
     game.start()
   }
 }
 
-/**
- * genericsにするのは正しいのか？
- * 使う側でラップすればいいんじゃないかしら？
- */
-class Game[P <: Player](val players: Seq[P]) {
+class Game(val players: Seq[Player]) {
+
   require(!players.isEmpty)
 
   val startPlayer = players(0)
 
   var turnPlayer = startPlayer
 
-  var round: Round[P] = new Round(1, this)
+  var round: Round = new Round(1, this)
 
-  var backedCards: List[Card] = Nil
+  var backedCards: BackedCards = new FixedBackedCards(Nil)
 
   var numOfChipsOnBoard: Int = _
 
@@ -58,7 +55,7 @@ class Game[P <: Player](val players: Seq[P]) {
   }
 
   def onRoundEnd() {
-    if (backedCards.isEmpty)
+    if (backedCards.cards.isEmpty)
       isOver = true
     else
       startNextRound()
@@ -74,9 +71,20 @@ class Game[P <: Player](val players: Seq[P]) {
   def nextPlayer = {
     rotate(players, turnPlayer)
   }
+
+  def allOptions: Seq[Choice] = {
+    val pass = if (turnPlayer.numOfChips > 0) Some(Pass()) else None
+    val pick = Some(Pick())
+
+    Seq(pass, pick).flatten
+  }
 }
 
-class InteractiveGame(ui: Ui, players: Seq[Player with Playable]) extends Game[Player with Playable](players) {
+class InteractiveGame(ui: Ui, players: Seq[Player with Playable]) extends Game(players) {
+
+  private def toPlayable(p: Player): Player with Playable = {
+    (players find (p ==)).get
+  }
 
   override def onRoundEnd() {
     ui.onRoundEnd()
@@ -92,7 +100,7 @@ class InteractiveGame(ui: Ui, players: Seq[Player with Playable]) extends Game[P
     round.start()
 
     while (!isOver) {
-      val choice = turnPlayer.choose(this)
+      val choice = toPlayable(turnPlayer).choose(this)
       ui.onChosen(choice)
       round.doTurn(choice)
     }
@@ -105,15 +113,12 @@ class InteractiveGame(ui: Ui, players: Seq[Player with Playable]) extends Game[P
 /**
  * Gameのinnerの方がいい？
  */
-class Round[P <: Player](val num: Int, game: Game[P]) {
+class Round(val num: Int, game: Game) {
   require(num > 0)
 
-  private trait State
-  private case class NotStart() extends State
-  private case class Running() extends State
-  private case class End() extends State
+  import Round._
 
-  private var state: State = NotStart()
+  var state: State = NotStart()
 
   def isEnd = state == End()
   def isRunning = state == Running()
@@ -155,17 +160,39 @@ class Round[P <: Player](val num: Int, game: Game[P]) {
   }
 
   def start() {
-    val (head :: tail) = game.backedCards
-    facedCard = Some(head)
-    game.backedCards = tail
+    val (faced, backed) = game.backedCards.faceUp
+    facedCard = Some(faced)
+    game.backedCards = backed
 
     state = Running()
     game.onRoundStart()
   }
 
   def info = {
-    val faced = facedCard.some(_.num.toString).none("none")
-    "round "+num+" faced:'"+faced+"' chips:"+game.numOfChipsOnBoard
+    val faced = facedCard.some("'"+_.num+"'").none("none")
+    "round "+num+" faced:"+faced+" chips:"+game.numOfChipsOnBoard
+  }
+}
+
+object Round {
+  trait State
+  case class NotStart() extends State
+  case class Running() extends State
+  case class End() extends State
+}
+
+
+trait BackedCards {
+  def faceUp: (Card, BackedCards)
+
+  def cards: Seq[Card]
+}
+
+
+class FixedBackedCards(val cards: List[Card]) extends BackedCards {
+  def faceUp: (Card, BackedCards) = {
+    val head :: tail = cards
+    (head, new FixedBackedCards(tail))
   }
 }
 

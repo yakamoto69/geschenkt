@@ -16,9 +16,9 @@ trait Ui {
   def onEnd()
 }
 
-class ConsoleUi[P <: Player] extends Ui {
+class ConsoleUi extends Ui {
 
-  var game: Game[P] = _
+  var game: Game = _
 
   private val DoPick = """\s*(?i:pick)\s*""".r
   private val DoPass = """\s*(?i:pass)\s*""".r
@@ -59,7 +59,7 @@ class ConsoleUi[P <: Player] extends Ui {
   def onChosen(choice: Choice) {
     val c = choice match {
       case Pass() => "pass"
-      case Pick() => "pick '"+game.round.facedCard.get.num+"' and "+game.numOfChipsOnBoard+" chips" // todo get使ってる
+      case Pick() => "pick "+facedCard+" and "+game.numOfChipsOnBoard+" chips"
     }
     println(game.turnPlayer.name+" "+c)
   }
@@ -71,14 +71,19 @@ class ConsoleUi[P <: Player] extends Ui {
     }
   }
 
+  def facedCard = {
+    "'"+game.round.facedCard.get.num+"'"
+  }
+
+  def roundNum = {
+    game.round.num
+  }
+
   def onRoundStart() {
-    val num = game.round.num
-    val newCard = game.round.facedCard.get.num // todo get使ってる
-    println("round "+num+" start: '"+newCard+"' faced")
+    println("round "+roundNum+" start: "+facedCard+" faced")
   }
 
   def onRoundEnd() {
-    val num = game.round.num
-    println("round "+num+" end")
+    println("round "+roundNum+" end")
   }
 }

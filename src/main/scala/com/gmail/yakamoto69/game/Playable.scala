@@ -5,17 +5,16 @@ import yakamoto69.scala._
 import annotation.tailrec
 
 trait Playable {
-  def choose(game: Game[_]): Choice
+  def choose(game: Game): Choice
 }
 
 trait Ai extends Playable {
   self: Player =>
 
-  def choose(game: Game[_]): Choice = {
-    if (numOfChips > 0)
-      Pass()
-    else
-      Pick()
+  def choose(game: Game): Choice = {
+    assert(self == game.turnPlayer)
+
+    PlayOutStrategy.bestChoice(game)
   }
 }
 
@@ -25,7 +24,9 @@ trait Human extends Playable {
 
   def ui: Ui
 
-  def choose(game: Game[_]): Choice = {
+  def choose(game: Game): Choice = {
+    assert(self == game.turnPlayer)
+
     ui.promptToChoose(self)
   }
 }

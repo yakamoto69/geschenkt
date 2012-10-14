@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 @RunWith(classOf[JUnitRunner])
 class GameSpec extends FunSuite with BeforeAndAfter {
 
-  var game: Game[Player] = _
+  var game: Game = _
   var player1, player2, player3: Player = _
 
   before {

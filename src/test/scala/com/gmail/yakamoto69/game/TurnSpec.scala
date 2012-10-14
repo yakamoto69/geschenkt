@@ -9,9 +9,9 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class TurnSpec extends FunSpec with BeforeAndAfter {
 
-  var game: Game[Player] = _
+  var game: Game = _
   var player1, player2, player3: Player = _
-  var round: Round[Player] = _
+  var round: Round = _
 
   before {
     def p(i: Int) = {
@@ -22,7 +22,7 @@ class TurnSpec extends FunSpec with BeforeAndAfter {
 
     player1 = p(1); player2 = p(2); player3 = p(3)
     game = new Game(Seq(player1, player2, player3))
-    game.backedCards = ((10 until 20) map toCard).toList  // 適当に、なくならない程度にたくさん
+    game.backedCards = new FixedBackedCards(((10 until 20) map toCard).toList)  // 適当に、なくならない程度にたくさん
     round = game.round
   }
 
