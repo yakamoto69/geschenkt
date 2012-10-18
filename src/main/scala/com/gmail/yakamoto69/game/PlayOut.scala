@@ -5,9 +5,10 @@ import yakamoto69.scala._
 import collection.mutable.ArrayBuffer
 import annotation.tailrec
 
-object PlayOutStrategy {
+object PlayOut {
 
-  case class Result(winner: Player)
+  // gameを作り直すので、単純なplayerの==が使えないから何番めのplayerが勝ったかと表現する
+  case class Result(winner: Int)
 
   /**
    * game.turnPlayerの勝率が高くなる選択肢を求める
@@ -16,6 +17,7 @@ object PlayOutStrategy {
     def winRate(choice: Choice): Double = {
       val total = 10000 // todo
 
+      // 再帰構造はマルチコアに強いって聞いたけど、この場合だとまるで駄目じゃないか？
       @tailrec
       def playN(n: Int, wins: Int = 0): Int = {
         if (n == 0)
@@ -23,7 +25,7 @@ object PlayOutStrategy {
         else {
           val advanced = mkAdvanced(game, choice)
           val r = randomPlayOut(advanced)
-          playN(n - 1, if (advanced.players.indexOf(r.winner) == game.players.indexOf(game.turnPlayer)) wins + 1 else wins)
+          playN(n - 1, if (r.winner == game.players.indexOf(game.turnPlayer)) wins + 1 else wins)
         }
       }
 
@@ -40,14 +42,12 @@ object PlayOutStrategy {
   }
 
 
-  private def randomPlayOut(game: Game): Result = {
-    //    val choices = ArrayBuffer[Choice]()
+  def randomPlayOut(game: Game): Result = {
     while(!game.isOver) {
       val choice = randomSelect(game.allOptions)
-      //      choices += choice
       game.round.doTurn(choice)
     }
-    Result(game.winner)
+    Result(game.players.indexOf(game.winner))
   }
 
   /**
@@ -61,11 +61,11 @@ object PlayOutStrategy {
   }
 
 
-  private def copyGame(game: Game): Game = {
+  def copyGame(game: Game): Game = {
     val copy = new Game(game.players map copyPlayer)
     copy.numOfChipsOnBoard = game.numOfChipsOnBoard
     copy.isOver = game.isOver
-    copy.backedCards = new RandomBackedCards(game.backedCards.cards)
+    copy.backedCards = new RandomBackedCards(game.backedCards.possibleCards) // ここでは山札じゃなくて、("全カード" - "既に表示したカード")と考える
     copy.turnPlayer = copy.players(game.players.indexOf(game.turnPlayer)) // copyしたplayerの中から対応するplayerを選ぶ
     copy.round = copyRound(game.round, copy)
     copy
@@ -86,13 +86,18 @@ object PlayOutStrategy {
   }
 }
 
-// todo 省いたカードの分を考慮してない
-class RandomBackedCards(val cards: Seq[Card]) extends BackedCards {
+class RandomBackedCards(cards: Seq[Card]) extends BackedCards {
   def faceUp: (Card, BackedCards) = {
     val faced = randomSelect(cards)
     val remain = cards filterNot (faced ==)
     (faced, new RandomBackedCards(remain))
   }
+
+  def isEmpty = cards.isEmpty
+
+  def size = cards.size
+
+  def possibleCards = cards
 }
 
 

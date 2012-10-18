@@ -29,4 +29,13 @@ class PackageSpec extends FunSuite {
     assert(1 == Some(1).some(x=>x).none(0))
     assert(0 == Option.empty[Int].some(x=>x).none(0))
   }
+
+  test("buffer") {
+    val i = generator(1)
+    val buff = Buffer(i())
+    assert(1 == buff.peek())
+    assert(1 == buff.peek()) // peekでは変わらない
+    assert(1 == buff.pop()) // popしたから次呼んだときに値が変わってる
+    assert(2 == buff.peek())
+  }
 }

@@ -26,7 +26,7 @@ class RoundSpec extends FunSpec with BeforeAndAfter {
   describe("A Round") {
 
     it("When a round starts, a backed card faces up") {
-      val cardsNum = game.backedCards.cards.size
+      val cardsNum = game.backedCards.size
 
       assert(!round.facedCard.isDefined)  // 最初は表を向いているカードはない
 
@@ -36,7 +36,7 @@ class RoundSpec extends FunSpec with BeforeAndAfter {
 
       // 山札が一枚減る
       expectResult(cardsNum - 1) {
-        game.backedCards.cards.size
+        game.backedCards.size
       }
     }
 

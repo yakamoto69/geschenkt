@@ -14,7 +14,7 @@ trait Ai extends Playable {
   def choose(game: Game): Choice = {
     assert(self == game.turnPlayer)
 
-    PlayOutStrategy.bestChoice(game)
+    UctStrategy.bestChoice(game)
   }
 }
 

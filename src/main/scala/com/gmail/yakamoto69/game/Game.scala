@@ -55,7 +55,7 @@ class Game(val players: Seq[Player]) {
   }
 
   def onRoundEnd() {
-    if (backedCards.cards.isEmpty)
+    if (backedCards.isEmpty)
       isOver = true
     else
       startNextRound()
@@ -76,7 +76,7 @@ class Game(val players: Seq[Player]) {
     val pass = if (turnPlayer.numOfChips > 0) Some(Pass()) else None
     val pick = Some(Pick())
 
-    Seq(pass, pick).flatten
+    Seq(pass, pick).flatten filterNot (_=>isOver)
   }
 }
 
@@ -183,17 +183,27 @@ object Round {
 
 
 trait BackedCards {
-  def faceUp: (Card, BackedCards)
+  def faceUp: (Card, BackedCards) // (faced, remain)
 
-  def cards: Seq[Card]
+  def isEmpty: Boolean
+
+  def size: Int
+
+  def possibleCards: Seq[Card] // まだ目に見えてないカード。山札とは違うよ
 }
 
 
-class FixedBackedCards(val cards: List[Card]) extends BackedCards {
+class FixedBackedCards(cards: List[Card], removed: Seq[Card] = Nil) extends BackedCards {
   def faceUp: (Card, BackedCards) = {
     val head :: tail = cards
     (head, new FixedBackedCards(tail))
   }
+
+  def isEmpty = cards.isEmpty
+
+  def size = cards.size
+
+  def possibleCards = cards ++ removed  // 山札 + 取り除いたカード
 }
 
 
