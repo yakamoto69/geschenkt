@@ -23,18 +23,20 @@ object Buffer {
 
     private var buff: Option[A] = None
 
+    private def setBuff(): A = {
+      create hook { a =>
+        buff = Some(a)
+      }
+    }
+
     def peek(): A = {
-      // todo うまくOptionを使えていない
-      if (!buff.isDefined) buff = Some(create)
-      buff.get
+      buff getOrElse setBuff()
     }
 
     def pop(): A = {
-      // todo うまくOptionを使えていない
-      if (!buff.isDefined) buff = Some(create)
-      val c = buff.get
-      buff = None
-      c
+      peek() hook { _ =>
+        buff = None
+      }
     }
 
     def sync = new Buffer[A] {

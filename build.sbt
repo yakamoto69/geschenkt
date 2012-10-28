@@ -4,7 +4,7 @@ version := "1.0"
 
 scalaVersion := "2.9.2"
 
-libraryDependencies ++= Seq("eval", "collection", "logging") map { name =>
+libraryDependencies ++= Seq("eval", "core", "logging") map { name =>
     "com.twitter" % ("util-"+name) % "5.3.12"
 }
 

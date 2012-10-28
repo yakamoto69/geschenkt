@@ -39,4 +39,13 @@ package object scala {
       case None => none
     }
   }
+
+  implicit def toAnyW[A](a: A) = new AnyW(a)
+
+  class AnyW[A](a: A) {
+    def hook(f: A => Unit): A = {
+      f(a)
+      a
+    }
+  }
 }

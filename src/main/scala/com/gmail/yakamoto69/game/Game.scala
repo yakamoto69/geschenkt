@@ -22,12 +22,13 @@ object Game {
 
     def initCards = {
       val all = util.Random.shuffle((3 to 35).toList)
-      all.drop(9) map Card
+      (all.map(Card) splitAt 9).swap
     }
 
     val players = Seq(player, ai(1), ai(2), ai(3))
     val game = new InteractiveGame(console, Random.shuffle(players))
-    game.backedCards = new FixedBackedCards(initCards)
+    val (backed, removed) = initCards
+    game.backedCards = new FixedBackedCards(backed, removed)
     console.game = game
 
     game.start()

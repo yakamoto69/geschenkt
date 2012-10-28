@@ -16,8 +16,9 @@ class Player(val name: String) {
 
   def score: Int = scoreOfCards - numOfChips
 
+  def cInfo = cards.map(_.num).sorted.mkString(" ")
+
   def info = {
-    val cInfo = cards.map(_.num).sorted.mkString(" ")
     name+": score="+score+" chips="+numOfChips+" cards="+cInfo
   }
 
