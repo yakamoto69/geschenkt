@@ -9,7 +9,7 @@ import android.content.Context
 import util.Random
 import android.graphics.{Paint, Canvas}
 import android.os.Handler
-import RepeatTask.runnable
+import com.twitter.conversions.thread.makeRunnable
 
 class Field(context: Context, attrs: AttributeSet, defStyle: Int) extends View(context, attrs, defStyle) {
   self =>
@@ -37,7 +37,7 @@ class Field(context: Context, attrs: AttributeSet, defStyle: Int) extends View(c
   }
 
   private def refresh() {
-    handler.post(runnable{
+    handler.post(makeRunnable{
       invalidate()
     })
   }

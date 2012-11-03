@@ -3,8 +3,10 @@ package com.gmail.yakamoto69.scala
 import com.gmail.yakamoto69
 import yakamoto69.scala._
 
-import actors.threadpool.{TimeUnit, Future, Executors}
-import collection.mutable.ListBuffer
+import com.twitter.concurrent.{NamedPoolThreadFactory, Broker}
+import com.twitter.util.{ExecutorServiceFuturePool, FuturePool}
+import java.util.concurrent.{Executors, TimeUnit}
+import annotation.tailrec
 
 object RepeatTask {
 
@@ -12,58 +14,43 @@ object RepeatTask {
    * task を　repeatMilliSecsミリ秒間できるだけたくさん実行する
    * task はもちろんスレッドセーフじゃないといけないぞ！
    */
-  def run(task: Runnable, repeatMilliSecs: Long): Int = {
-    val executor = Executors.newCachedThreadPool
-    val remover = Executors.newCachedThreadPool
+  def run(repeatMilliSecs: Long, task: => Unit): Int = {
 
-    val queue = ListBuffer[Future]()
-    def removeDone() {
-      (queue filter (_.isDone)) foreach { f =>
-        queue.remove(queue indexOf f)
-      }
-    }
+    val b = new Broker[Unit]
+    // FuturePool.defaultPoolと一緒。
+    // タスクが全部終わるのを待つ必要があったけど、shutdownなしでできないので、仕方なく別のPoolを作ることにした
+    val pool = new ExecutorServiceFuturePool(
+      Executors.newFixedThreadPool(
+        scala.collection.parallel.availableProcessors,
+        new NamedPoolThreadFactory("RepeatTask")
+      )
+    )
+    val o = b.recv
 
-    val lock = new EasyLock()
-
-    // queueサイズが最大同時スレッド数になるので注意
     // 自分でこれを決めなくてはいけないのは嫌だなあ。何か手はないものか
-    val maxQueueSize = scala.collection.parallel.availableProcessors
-
-    val queueAvailable = lock.mkCondition(queue.size < maxQueueSize)
-
-    var cnt = 0
+    val maxRunningSize = scala.collection.parallel.availableProcessors
 
     val t = Timer.start(repeatMilliSecs)
 
-    while(!t.isOver) {
-      lock {
-        queueAvailable.waitUntilFulfilled()
+    @tailrec
+    def cycle(runningCnt: Int = 0, acc: Int = 0): Int = {
+      if (t.isOver) return acc
 
-        cnt += 1
-        val r = executor.submit(task)
-        queue += r
-
-        remover.submit(runnable {
-          r.get() // タスク終わるまで待つ
-          lock {
-            removeDone()
-            queueAvailable.signalIfFulfilled()
-          }
-        })
+      if (runningCnt < maxRunningSize) {
+        pool(task).onSuccess { b ! _ }
+        cycle(runningCnt + 1, acc + 1)
+      } else {
+        o.syncWait()
+        cycle(runningCnt - 1, acc)
       }
     }
 
-    executor.shutdown()
-    remover.shutdown()
+    val cnt = cycle()
 
-    assert(executor.awaitTermination(1, TimeUnit.SECONDS))
+    pool.executor.shutdown()
+
+    assert(pool.executor.awaitTermination(1, TimeUnit.SECONDS))
 
     cnt
-  }
-
-  def runnable(f: => Unit) = new Runnable {
-    def run() {
-      f
-    }
   }
 }

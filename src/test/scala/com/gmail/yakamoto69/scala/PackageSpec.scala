@@ -5,6 +5,9 @@ import yakamoto69.scala._
 import org.scalatest.FunSuite
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
+import yakamoto69.scala.AutonomousSM.Conditions
+import scala.actors.Actor._
+import com.twitter.conversions.thread
 
 @RunWith(classOf[JUnitRunner])
 class PackageSpec extends FunSuite {
@@ -37,5 +40,100 @@ class PackageSpec extends FunSuite {
     assert(1 == buff.peek()) // peekでは変わらない
     assert(1 == buff.pop()) // popしたから次呼んだときに値が変わってる
     assert(2 == buff.peek())
+  }
+
+  test("StateMachine") {
+    val s = new SM[Int, String]({
+      case 1 => _ match {
+        case "next" => 2
+      }
+      case 2 => _ match {
+        case "prev" => 1
+      }
+    })
+
+    assert(2 == s.recv(1, "next"))
+    assert(1 == s.recv(2, "prev"))
+  }
+
+  test("Autonomous State Machine") {
+
+    // 純粋なステートマシン
+    val sm = new SM[Symbol, String]({
+      case 'working => {
+        case "work" => 'working
+        case "wait" => 'waiting
+        case "end" => 'end
+      }
+
+      case 'waiting => {
+        case "work" => 'working
+//        case "end" => 'end   'waiting -> 'endの遷移があると、'waitingで待つ条件が難しくなるのでやめ
+      }
+    })
+
+
+    var total = 0
+    var workingCnt = 0
+
+    // 遷移の条件に使われる
+    // autonomousFやhookFが引数に取るようにしたほうがいいかも
+    val conditions = new Conditions(Map(
+      "workable" -> (() => workingCnt < 3),
+      "end" -> (() => total >= 10)
+    ))
+
+    def work() {
+      actor {
+        conditions.change("end") {
+          total += 1
+        }
+
+        println("begin work")
+        Thread.sleep(100)
+        println("finish work")
+
+        conditions.change("workable") {
+          workingCnt -= 1
+        }
+      }
+    }
+
+    // ('working, "work") にフックしてwork()を実行するようにしたステートマシン
+    val workingSm = sm.hook {
+      case ('working, "work") => work()
+    }
+
+    // 終端ステートになるまで自力でInputを求めて遷移を続ける
+    val asm = new AutonomousSM(workingSm, 'end)({
+
+      case 'working => {
+        val end = conditions.mkOption("end") {
+          "end"
+        }
+        val work = conditions.mkOption("workable") {
+          workingCnt += 1
+          "work"
+        }
+
+        end orElse work getOrElse "wait"
+      }
+
+      case 'waiting => {
+        conditions.waitUntil("workable") {
+          "work"
+        }
+      }
+    })
+
+    asm.start('working)
+
+    println(total)
+    println(workingCnt)
+  }
+
+  test("RepeatTask") {
+    val cnt = RepeatTask.run(500, (1 to 3000).foldRight(0)(_ + _))
+    println("cnt:"+cnt)
   }
 }

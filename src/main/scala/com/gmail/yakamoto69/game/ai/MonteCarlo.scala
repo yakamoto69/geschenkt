@@ -10,9 +10,7 @@ class MonteCarlo {
 
   def compute(world: McWorld): McChoice = {
     tree = new McTree(world)
-    RepeatTask.run(RepeatTask.runnable {
-      cycle()
-    }, 500 )
+    RepeatTask.run(1000, cycle())
 
     printResult()
 

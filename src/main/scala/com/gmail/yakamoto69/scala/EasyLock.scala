@@ -9,7 +9,7 @@ class EasyLock {
     new EasyCondition(lock.newCondition(), f)
   }
 
-  def apply(f: => Unit) {
+  def apply[A](f: => A): A = {
     lock.lock()
     try {
       f
@@ -21,18 +21,20 @@ class EasyLock {
 
 class EasyCondition(c: Condition, condition: => Boolean) {
 
-  def waitUntilFulfilled(f: => Unit) {
-    while (!condition) {
+  def isTrue = condition
+
+  def waitUntilFulfilled[A](f: => A): A = {
+    while (!isTrue) {
       c.await()
     }
     f
   }
 
   def signalAllIfFulfilled() {
-    if (condition) c.signalAll()
+    if (isTrue) c.signalAll()
   }
 
   def signalIfFulfilled() {
-    if (condition) c.signal()
+    if (isTrue) c.signal()
   }
 }
